@@ -5,38 +5,23 @@ if [ -z "$1" ]; then
 fi
 
 package=$1
-
-# Initialize a flag to indicate that the package wasnot found in any environement
-noPackageFound=true    
+noPackageFound=true  # Initialize a flag to track if the package is found
 
 # Loop through each environment
-conda env list | awk '!/^#/ {print $1}' | while read -r env; do
-    # Skip empty lines
-    if [ -z "$env" ]; then
-        continue
-    fi
-
-    # Initialize a flag to indicate if the environment name has been printed
-    printedEnvName=false
-
-    # Find matches for the package in the environment
-    conda list -n "$env" | grep -i "$package" | while read -r pkg; do
-        # Print the environment name only once if a match is found
-        if [ "$printedEnvName" = false ]; then
-            echo "Packages for conda environment: $env"
-            printedEnvName=true
-            noPackageFound=false
-        fi
-        echo "$pkg"
-    done
-
-    # Print a blank line if any matches were found for readability
-    if [ "$printedEnvName" = true ]; then
+for env in $(conda env list | awk '!/^#/ {print $1}'); do
+    # Search for matches in the current environment
+    matches=$(conda list -n "$env" | grep -i "$package")
+    
+    # Check if there are matches
+    if [ -n "$matches" ]; then
+        echo "Packages for conda environment: $env"
+        echo "$matches"
         echo
+        noPackageFound=false
     fi
 done
 
-# Print in case the package wasn't found in any environment
+# Print if no environments contain the package
 if [ "$noPackageFound" = true ]; then
     echo "No conda environment has the package: $package"
     return 2
